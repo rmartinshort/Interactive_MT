@@ -77,7 +77,7 @@ class QWGUI(Frame):
 		t2 = t2[0]+'T'+t2[1][:-3]
 		self.now = UTCDateTime(t2)
 
-		self.starttime = 604800 #1 week quakes
+		self.starttime = self.now - 604800 #1 week quakes
 
 		#--------------------------
 		#Default map boundaries
@@ -378,9 +378,13 @@ class QWGUI(Frame):
 		self.MTs = None
 		self.quakesplotted = None
 
-		#reset defaults
+		#reset defaults to global, M4.5 plus
 		self.minmag = 4.5
 		self.maxmag = 10.0
+		self.minlon = -179.9
+		self.maxlon = 179.9
+		self.minlat = -89.0
+		self.maxlat = 89.0
 
 		#reset the display defaults
 		self.quakeinfo.set('Displaying: M%s to M%s' %(self.minmag,self.maxmag))	
@@ -531,12 +535,12 @@ class QWGUI(Frame):
 					e2[0].remove()
 
 			self.quakedots.remove()
+			self.MTs = None
 
 			#self.mtlines.remove()
 			#self.mtdots.remove()
 			#self.MTs.remove()
 			self.canvas.draw()
-			self.MTs = None
 
 		else:
 
@@ -706,7 +710,7 @@ class QWGUI(Frame):
 		print 'Getting world quakes!!'
 
 		t2 = self.now
-		t1 = t2-self.starttime
+		t1 = self.starttime
 
 		#Determine the new sizes of the map objects, so that they don't crowd the map
 		mt_width,mt_rad,min_dot,max_dot,min_quake,max_quake = quaketools.determinemtsize(self.minlon,self.maxlon,self.minlat,self.maxlat)
@@ -734,7 +738,9 @@ class QWGUI(Frame):
 
 		print 'Autoupdating catalog!'
 
-		self.setquakesmanual(t1=self.starttime)
+		t1 = self.starttime
+
+		self.setquakesmanual(t1)
 
 
 	def USAquakes(self):
@@ -818,12 +824,20 @@ class QWGUI(Frame):
 
 		self.momenttensors = True
 		self.removemapobjs()
+
+		#This is not really ideal, because relecting MTs will put the time range back to its default of 1 week, but won't 
+		#change the mag range
+
 		self.setquakesmanual(t1=self.starttime)
 
 	def setevents(self):
 
 		self.momenttensors = None
 		self.removemapobjs()
+
+		#This is not really ideal, because relecting MTs will put the time range back to its default of 1 week, but won't 
+		#change the mag range
+
 		self.setquakesmanual(t1=self.starttime)
 
 	def SaveasPDF(self):
@@ -832,7 +846,7 @@ class QWGUI(Frame):
 		#self.f.savefig('test.pdf',format='pdf')
 
 		filelocation = tkFileDialog.asksaveasfilename(defaultextension='.pdf')
-		self.f.savefig(filelocation,format='pdf')
+		self.f.savefig(filelocation,format='pdf',dpi=400)
 		print 'Saved current figure'
 
 	def GetBoxCoors(self):

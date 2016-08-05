@@ -128,7 +128,7 @@ def depthslicequakes(quakes,mts,startlon,startlat,endlon,endlat):
 	sectionname = 'tmp_toposection.dat'
 
 	#Path to gsbco_08 global bathy/topo grid
-	topopath = '/Users/rmartinshort/Documents/Workshops/CIDER_2016/plumes/Bathy/gebco_08.nc'
+	topopath = '/Users/rmartinshort/Documents/Berkeley/Alaska/AlaskaExplorer/gebco_08.nc'
 
 	if not os.path.isfile(topopath):
 		print 'Error! GEBCO 08 dataset does not exist in expected location %s' %topopath
