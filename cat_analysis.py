@@ -515,7 +515,9 @@ def cat2list(cat, mt_type = 'Moment_tensor'):
         #evla = origins[1]
     
     quarry_blast = [tmp for tmp in eq_matrix if tmp[5] == 'quarry blast']
+    #print quarry_blast
     earthquakes =  [tmp for tmp in eq_matrix if tmp[5] == 'earthquake']
+    #print earthquakes
     
     evtime = [tmp.datetime for tmp in evtime_mat]
     return earthquakes, mt, event_id, quarry_blast

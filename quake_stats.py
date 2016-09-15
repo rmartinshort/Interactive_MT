@@ -55,6 +55,93 @@ def write2file(quakes,mts):
 
 	print 'Written files!'
 
+def GuttenBergRicher(quakes):
+	'''Guttenberg-Richter histogram for this set of events'''
+
+	magnitudes = []
+
+	for element in quakes:
+
+		mag = float(element[3])
+		magnitudes.append(mag)
+
+	fig1 = plt.figure(facecolor='white')
+	ax1 = fig1.add_subplot(111)
+
+
+	#Divide quake activity into 20 bins
+	n,bins,patches = ax1.hist(magnitudes,20,facecolor='green',alpha=0.75)
+	ax1.set_title('Earthquake magnitude histogram')
+	ax1.set_xlabel('Magnitude')
+	ax1.set_ylabel('Number of events')
+	ax1.grid()
+
+	#Constuct a polynomal fit to estimate a and b values:
+	#creation of the relation log(N) = a - bM
+
+	xs = []
+	ys = []
+
+	i = 0
+	for element in zip(n,bins):
+
+		if float(element[0]) != 0:
+			#count the number of events >= that magnitude
+			N = np.sum(n[i:])
+
+			print 'Cm sum: %g' %N
+
+			#append the magnitude to the X axis
+			xs.append(element[1])
+
+			#append the log(10) of the number to the y axis
+			ys.append(np.log10(N))
+
+		i+=1
+
+	print xs,ys
+
+	z = np.polyfit(xs,ys,1)
+	p = np.poly1d(z)
+
+	b = z[0]
+	a = z[1]
+
+	Magnitude = np.linspace(min(magnitudes),10,100)
+	Number = 10**p(Magnitude)
+
+	#Predict the magnitude of the largest expected quake in this timeframe
+
+	print '\n-----------------------------------\n'
+	print 'Total number of events: %g' %len(magnitudes)
+	print '\n-----------------------------------\n'
+	print 'b value: %g' %(-b)
+	print 'a value (largest expected event in this timeframe): %g' %a
+	print '\n-----------------------------------\n'
+	print 'Largest event in catalog for this timeframe: %g' %max(magnitudes)
+	print '\n-----------------------------------\n'
+
+	fig2 = plt.figure(facecolor='white')
+	ax2 = fig2.add_subplot(111)
+
+	ax2.plot(Magnitude,Number,'r--',label='N = 10^(a-bM)')
+
+	#display the A and B values for the relationship
+	ax2.text(max(magnitudes)-1,int(max(Number)/2),'a value: %g' %a)
+	ax2.text(max(magnitudes)-1,int(max(Number)/2)-10,'b value: %g' %-b)
+
+	ax2.grid()
+	ax2.set_xlim(min(magnitudes),max(magnitudes)+0.5)
+	ax2.set_xlabel('M: Magnitude')
+	ax2.set_ylabel('N: Number of events >= M')
+	ax2.set_title('Guttenberg-Richter plot for this timeframe')
+	ax2.legend()
+
+	fig1.show()
+	fig2.show()
+
+
+
 
 def quakeswithtime(quakes,freq='day'):
 
@@ -235,8 +322,8 @@ def depthslicequakes(quakes,mts,startlon,startlat,endlon,endlat):
 
 def main():
 
-	t1 = UTCDateTime('2016-07-25')
-	t2 = UTCDateTime('2016-07-01')
+	t1 = UTCDateTime('2016-09-01')
+	t2 = UTCDateTime('2016-01-01')
 	mag1 = 5.01
 	mag2 = 10.0
 
@@ -251,7 +338,8 @@ def main():
 	
 	#write2file(quakes,mts)
 	#quakeswithtime(quakes)
-	cumulativemoment(quakes)
+	#cumulativemoment(quakes)
+	GuttenBergRicher(quakes)
 
 
 
