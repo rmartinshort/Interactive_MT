@@ -8,6 +8,8 @@ print 'Importing modules....'
 from Tkinter import *
 from point_browser import *
 import matplotlib 
+matplotlib.use('TkAgg')
+
 import numpy as np
 import time
 import datetime
@@ -18,20 +20,21 @@ import quake_stats as quakestats
 from obspy import UTCDateTime
 import tkFileDialog
 
-#Import quit dialog box options
+# #Import quit dialog box options
 from quitter import Quitter
 
-#Allow matplotlib to be used within a tkinter canvas
+# #Allow matplotlib to be used within a tkinter canvas
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap, cm 
 
-#Control matplotlib font size so that the map labels look OK
+# #Control matplotlib font size so that the map labels look OK
 matplotlib.rcParams.update({'font.size': 8})
 
-#This class handles the mouse-click options
+# #This class handles the mouse-click options
 Browse = PointBrowser()
+#matplotlib.use('TkAgg')
 
 print 'Done imports'
 
@@ -42,7 +45,7 @@ print 'Done imports'
 class QWGUI(Frame):
 	'''Base class controlling QuakeWatch GUI aspects'''
 
-	def __init__(self, parent, width=1100, height=400, **options):
+	def __init__(self, parent, width=1200, height=600, **options):
 
 		Frame.__init__(self,parent, **options)
 
@@ -54,18 +57,18 @@ class QWGUI(Frame):
 
 		top=self.winfo_toplevel()
 
-		#Configure the width of rows and columns when tthe gui gets stretched. The second number provides the relative
+		#Configure the width of rows and columns when the gui gets stretched. The second number provides the relative
 		#weight of the column or row given by the first number
 
 		norows = 14
 		nocols = 13
 
 		for i in range(norows):
-			Grid.rowconfigure(self,i,weight=1)
-			Grid.rowconfigure(parent,i,weight=1)
+		 	Grid.rowconfigure(self,i,weight=1)
+		 	Grid.rowconfigure(parent,i,weight=1)
 		for i in range(nocols):
-			Grid.columnconfigure(self,i,weight=1)
-			Grid.columnconfigure(parent,i,weight=1)
+		 	Grid.columnconfigure(self,i,weight=1)
+		 	Grid.columnconfigure(parent,i,weight=1)
 
 
 		#Various default settings
@@ -94,7 +97,7 @@ class QWGUI(Frame):
 		self.datacenter = 'USGS' #default datacenter to retrieve quake data from
 
         #create subplot where the map will go
-		self.f = plt.figure(dpi=250,facecolor='white')
+		self.f = plt.figure(dpi=300,facecolor='white')
 
 		#set the size of the figure for use with global map. Will need to choose this on the fly when
 		#resizing the figure
@@ -107,17 +110,18 @@ class QWGUI(Frame):
 		#Initial meap setup and quakes
 		print 'Drawing map....'
 		self.map = Basemap(ax=self.a,lat_0=38,lon_0=-122.0,resolution ='l',llcrnrlon=-179.9,llcrnrlat=-89.9,urcrnrlon=179.9,urcrnrlat=89.9)
+
 		self.map.fillcontinents()
+		self.map.drawcountries(linewidth=0.2)
 		self.map.drawcoastlines(linewidth=0.2)
+		self.map.drawstates(linewidth=0.1)
+
 
 		#plot the plate boundaries
 		print 'Drawing plate boundaries.....'
 		self.faults = quaketools.read_faults('usgs_plates.txt.gmtdat')
-		for i in self.faults:
-		    faults_lons = self.faults[i][0]
-		    faults_lats = self.faults[i][1]
-		    x,y = self.map(faults_lons, faults_lats)
-		    self.map.plot(x,y,'b-',linewidth=0.5)
+
+		self.plot_plate_boundaries()
 
 		self.map.drawparallels(np.arange(-90,90,30),labels=[1,1,0,0],linewidth=0.5,fontsize=4)
 		self.map.drawmeridians(np.arange(-180,180,30),labels=[0,0,0,1],linewidth=0.5,fontsize=4)
@@ -229,15 +233,16 @@ class QWGUI(Frame):
 		t1 = self.starttime
 
 		#Determine the new sizes of the map objects, so that they don't crowd the map
-		mt_width,mt_rad,min_dot,max_dot,min_quake,max_quake = quaketools.determinemtsize(self.minlon,self.maxlon,self.minlat,self.maxlat)
-
+		mt_width,mt_rad,min_quake,max_quake = quaketools.determinemtsize(self.minlon,self.maxlon,self.minlat,self.maxlat)
+		print max_quake,min_quake
 
 		self.catalog = quaketools.get_cat(data_center=self.datacenter,includeallorigins=True,starttime=t1,endtime=t2,minmagnitude=self.minmag,maxmagnitude=self.maxmag)
 		self.quakes, self.mts, self.events, self.qblasts = quaketools.cat2list(self.catalog)
 
 		if self.momenttensors == True:
 
-			self.quakesplotted = quaketools.plot_events(self.map,self.a,self.quakes)
+			#plot both the moment tensors and the quakes that don't have them
+			self.quakesplotted = quaketools.plot_events(self.map,self.a,self.quakes,llat=self.minlat,ulat=self.maxlat,llon=self.minlon,ulon=self.maxlon,dist_bt=100,min_size=min_quake,max_size=max_quake)
 			self.mtlines, self.MTs, self.quakedots, xs, ys, urls = quaketools.plot_mt(self.map,self.a,self.f,self.quakes,self.mts,self.events,mt_width=3,radius=self.mtradius,angle_step=40)
 			Browse.updatedata(xs,ys,urls,self.mtradius)
 
@@ -256,12 +261,22 @@ class QWGUI(Frame):
 		self.map = Basemap(ax=self.a,lat_0=38,lon_0=-122.0,resolution ='l',llcrnrlon=-179.9,llcrnrlat=-89,urcrnrlon=179.9,urcrnrlat=89)
 		self.map.fillcontinents()
 
+
+		self.map.drawcountries(linewidth=0.2)
+		self.map.drawcoastlines(linewidth=0.2)
+		self.map.drawstates(linewidth=0.1) 
+
+		#--------------------------
+		#Default map boundaries
+		#--------------------------
+		self.minlon = -179.9
+		self.maxlon = 179.9
+		self.minlat = -89
+		self.maxlat = 89
+		#--------------------------
+
 		#plot the plate boundaries
-		for i in self.faults:
-		    faults_lons = self.faults[i][0]
-		    faults_lats = self.faults[i][1]
-		    x,y = self.map(faults_lons, faults_lats)
-		    self.map.plot(x,y,'b-',linewidth=0.5)
+		self.plot_plate_boundaries()
 		
 		self.map.drawparallels(np.arange(-90,90,30),labels=[1,1,0,0],linewidth=0.5,fontsize=4)
 		self.map.drawmeridians(np.arange(-180,180,30),labels=[0,0,0,1],linewidth=0.5,fontsize=4)
@@ -286,7 +301,7 @@ class QWGUI(Frame):
 		lon0 = int(abs(lon2)-abs(lon1))/2
 		lat0 = int((lat2-lat1)/2)
 
-		#choose the resolution: high resolition maps take AGES to load, however
+		#choose the resolution: high resolution maps take AGES to load, however
 
 		if 2.0 < abs(lat2-lat1) < 4.0:
 			res = 'i'
@@ -323,14 +338,11 @@ class QWGUI(Frame):
 		self.map.drawstates(linewidth=0.1)
 
 		#plot the plate boundaries
-		for i in self.faults:
-		    faults_lons = self.faults[i][0]
-		    faults_lats = self.faults[i][1]
-		    x,y = self.map(faults_lons, faults_lats)
-		    self.map.plot(x,y,'b-',linewidth=0.5)
+		self.plot_plate_boundaries()
+
 
 		#Determine the new sizes of the map objects, so that they don't crowd the map
-		mt_width,mt_rad,min_dot,max_dot,min_quake,max_quake = quaketools.determinemtsize(self.minlon,self.maxlon,self.minlat,self.maxlat)
+		mt_width,mt_rad,min_quake,max_quake = quaketools.determinemtsize(self.minlon,self.maxlon,self.minlat,self.maxlat)
 		print min_quake,max_quake
 
 		print 'Mt width and radius are as follows:'
@@ -342,12 +354,13 @@ class QWGUI(Frame):
 
 		if self.momenttensors == True:
 
+			self.quakesplotted = quaketools.plot_events(self.map,self.a,self.quakes,llat=lat1,ulat=lat2,llon=lon1,ulon=lon2,dist_bt=100,min_size=min_quake,max_size=max_quake)
 			self.mtlines, self.MTs, self.quakedots, xs, ys, urls = quaketools.plot_mt(self.map,self.a,self.f,self.quakes,self.mts,self.events,llat=lat1,ulat=lat2,llon=lon1,ulon=lon2,dist_bt=200,radius=mt_rad,mt_width=mt_width)
 			Browse.updatedata(xs,ys,urls,mt_rad)
 
 		else: 
 
-			quaketools.plot_events(self.map,self.a,self.quakes,llat=lat1,ulat=lat2,llon=lon1,ulon=lon2,dist_bt=100,min_size=min_quake,max_size=max_quake)
+			self.quakesplotted = quaketools.plot_events(self.map,self.a,self.quakes,llat=lat1,ulat=lat2,llon=lon1,ulon=lon2,dist_bt=100,min_size=min_quake,max_size=max_quake)
 
 
 		#self.map = Basemap(ax=self.a,projection='merc',llcrnrlat=lat1,urcrnrlat=lat2,llcrnrlon=lon1,urcrnrlon=lon2,lat_ts=true_scale_lat,resolution='l')
@@ -414,10 +427,6 @@ class QWGUI(Frame):
 		#reset defaults to global, M4.5 plus
 		self.minmag = 4.5
 		self.maxmag = 10.0
-		self.minlon = -179.9
-		self.maxlon = 179.9
-		self.minlat = -89.0
-		self.maxlat = 89.0
 
 		#reset the display defaults
 		self.quakeinfo.set('Displaying: M%s to M%s' %(self.minmag,self.maxmag))	
@@ -526,7 +535,10 @@ class QWGUI(Frame):
 		#Note that the earthquake statistics package uses the catalog output from this call to get_cat, so ensure to
 		#update the quake catalog before looking at the stats
 
-		mt_width,mt_rad,min_dot,max_dot,min_quake,max_quake = quaketools.determinemtsize(self.minlon,self.maxlon,self.minlat,self.maxlat)
+		print 'In set quakes manual'
+		print self.minlon,self.maxlon,self.minlat,self.maxlat
+
+		mt_width,mt_rad,min_quake,max_quake = quaketools.determinemtsize(self.minlon,self.maxlon,self.minlat,self.maxlat)
 
 		print 'Mt width and radius are as follows:'
 		print mt_width
@@ -551,6 +563,7 @@ class QWGUI(Frame):
 		self.minmag = mag1
 		self.maxmag = mag2
 		self.quakeinfo.set('Displaying: M%s to M%s' %(self.minmag,self.maxmag))	
+		self.timeinfo.set('Displaying past %.2f days' %((self.now-t1)/(24*3600)))
 
 		self.canvas.draw()
 
@@ -642,7 +655,7 @@ class QWGUI(Frame):
 		menubar.add_cascade(label="Options",menu=filemenu)
 
 		subm1 = Menu(menubar,tearoff=0)
-		subm1.add_command(label='Gutenburg-Richter plot',command=self.guttenbergrichter)
+		subm1.add_command(label='Gutenburg-Richter plot',command=self.gutenbergrichter)
 		subm1.add_command(label='Cumulative moment release',command=self.cumulate_moment)
 		subm1.add_command(label='Binned quake activity',command=self.quaketimeplot)
 		menubar.add_cascade(label="Statistics",menu=subm1)
@@ -741,9 +754,9 @@ class QWGUI(Frame):
 		quakestats.cumulativemoment(self.quakes)
 
 
-	def guttenbergrichter(self):
+	def gutenbergrichter(self):
 
-		'''Link to quake_stats plot of guttenberg-richter analysis'''
+		'''Link to quake_stats plot of gutenberg-richter analysis'''
 
 		quakestats.GuttenBergRicher(self.quakes)
 
@@ -806,7 +819,7 @@ class QWGUI(Frame):
 		self.a.clear()
 
 		#Determine the new sizes of the map objects, so that they don't crowd the map
-		mt_width,mt_rad,min_dot,max_dot,min_quake,max_quake = quaketools.determinemtsize(self.minlon,self.maxlon,self.minlat,self.maxlat)
+		mt_width,mt_rad,min_quake,max_quake = quaketools.determinemtsize(self.minlon,self.maxlon,self.minlat,self.maxlat)
 
 		#Map setup and quakes
 		self.map = Basemap(ax=self.a,lat_0=lat0,lon_0=lon0,resolution ='l',llcrnrlon=lon1,llcrnrlat=lat1,urcrnrlon=lon2,urcrnrlat=lat2)
@@ -826,6 +839,7 @@ class QWGUI(Frame):
 			#plot the moment tensors and redraw
 			#self.quakesplotted = quaketools.plot_events(self.map,self.a,self.quakes)
 			self.mtlines, self.MTs, self.quakedots, xs, ys, urls = quaketools.plot_mt(self.map,self.a,self.f,self.quakes,self.mts,self.events,mt_width=mt_width,radius=mt_rad,angle_step=40,llat=lat1,ulat=lat2,llon=lon1,ulon=lon2)
+			self.quakesplotted = quaketools.plot_events(self.map,self.a,self.quakes,llat=self.minlat,ulat=self.maxlat,llon=self.minlon,ulon=self.maxlon,dist_bt=100,min_size=min_quake,max_size=max_quake)
 			Browse.updatedata(xs,ys,urls,mt_rad)
 
 		else:
@@ -900,14 +914,26 @@ class QWGUI(Frame):
 			except:
 				return None
 
+	def plot_plate_boundaries(self):
+
+		'''Draws the plate boundaries on the map'''
+
+		for i in self.faults:
+		    faults_lons = self.faults[i][0]
+		    faults_lats = self.faults[i][1]
+		    x,y = self.map(faults_lons, faults_lats)
+		    self.map.plot(x,y,'b-',linewidth=0.5)
+
 
 
 if __name__ == '__main__':
 
 	'''The GUI loop'''
 	tk = Tk()
+	#tk.columnconfigure(0, weight=1)
+	#tk.rowconfigure(0, weight=1)
 	viewer = QWGUI(tk)
-	viewer.refreshloop()
+	#viewer.refreshloop()
 	tk.mainloop()
 
 

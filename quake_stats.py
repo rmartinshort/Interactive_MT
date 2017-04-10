@@ -142,7 +142,6 @@ def GuttenBergRicher(quakes):
 
 
 
-
 def quakeswithtime(quakes,freq='day'):
 
 	'''plots a histogram of quake activity'''
@@ -156,8 +155,14 @@ def cumulativemoment(quakes):
 
 	df = pd.DataFrame(quakes, columns= [ 'evla', 'evlo', 'evdp', 'mag', 'mag_type', 'event_type', 'date'] )
 
-	starttime = df.ix[:,6].min()
+	#Determine event region for graph title:
+	minla = min(df.evla.values)
+	maxla = max(df.evla.values)
+	minlo = min(df.evlo.values)
+	maxlo = max(df.evlo.values)
 
+
+	starttime = df.ix[:,6].min()
 	times = np.array(df.ix[:,6].values)-starttime
 	mags = np.array(df.ix[:,3].values)
 
@@ -170,7 +175,7 @@ def cumulativemoment(quakes):
 	totalmoment = 0
 
 	for element in sorted(zip(times,mags)):
-		timesplot.append(element[0]/3600.0) #time measured in hrs
+		timesplot.append(element[0]/(24*3600.0)) #time measured in days 
 		mag = float(element[1])
 
 		mo = 10**((3/2.0)*(mag+10.7))
@@ -179,23 +184,31 @@ def cumulativemoment(quakes):
 		totalquakes += 1
 
 		if mag == maxmag:
+			evdate = df[df.mag == maxmag].date
+			mmlon = df[df.mag == maxmag].evlo.values[0]
+			mmlat = df[df.mag == maxmag].evla.values[0]
 			mt = totalquakes
-			mm = element[0]/3600.0
+			mm = element[0]/(24*3600.0)
 
 		momentsplot.append(totalmoment)
 		quakenumberplot.append(totalquakes)
 
 	fig = plt.figure(facecolor='white')
+	fig.suptitle('Maxlat:%g Maxlon:%g Minlat:%g Minlon:%g' %(minla,maxlo,minla,minlo))
 	ax1 = fig.add_subplot(211)
 	ax1.plot(timesplot,momentsplot)
-	ax1.set_xlabel('Time in hours from first event',fontsize=12)
+	ax1.plot([mm,mm],[0,max(momentsplot)],'r--')
+	ax1.set_xlabel('Days since %s' %(str(starttime)),fontsize=12)
 	ax1.set_ylabel('Cumulative moment release (Nm)',fontsize=12)
+	ax1.grid()
 
 	ax2 = fig.add_subplot(212)
+	ax2.plot(mm,mt,'ro',label='Largest event: M%g Lon:%g Lat:%g' %(maxmag,mmlon,mmlat))
 	ax2.plot(timesplot,quakenumberplot)
-	ax2.plot(mm,mt,'ro')
-	ax2.set_xlabel('Time in hours from first event',fontsize=12)
+	ax2.set_xlabel('Days since %s' %(str(starttime)),fontsize=12)
 	ax2.set_ylabel('Cumulative number of events',fontsize=12)
+	ax2.legend(loc='best',numpoints=1)
+	ax2.grid()
 	fig.show()
 
 def depthslicequakes(quakes,mts,startlon,startlat,endlon,endlat):
@@ -324,7 +337,7 @@ def main():
 
 	t1 = UTCDateTime('2016-09-01')
 	t2 = UTCDateTime('2016-01-01')
-	mag1 = 5.01
+	mag1 = 6.01
 	mag2 = 10.0
 
 	cat = quaketools.get_cat(data_center='USGS',includeallorigins=True,starttime=t2,endtime=t1,minmagnitude=mag1,maxmagnitude=mag2,maxlongitude=180,minlongitude=-180,maxlatitude=90,minlatitude=-90)
@@ -338,8 +351,8 @@ def main():
 	
 	#write2file(quakes,mts)
 	#quakeswithtime(quakes)
-	#cumulativemoment(quakes)
-	GuttenBergRicher(quakes)
+	cumulativemoment(quakes)
+	#GuttenBergRicher(quakes)
 
 
 

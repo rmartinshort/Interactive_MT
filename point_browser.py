@@ -51,8 +51,6 @@ class PointBrowser:
 
       if self.dragging:
 
-        print 'Dragging!'
-
         if self.box:
           self.box[0].remove()
 
@@ -118,11 +116,6 @@ class PointBrowser:
       except:
 
         print 'Currently no xs vector'
-
-
-
-
-
 
 
     def update(self):

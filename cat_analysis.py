@@ -620,6 +620,8 @@ def plot_mt(mapobj,axisobj,figobj,earthquakes, mt, event_id, location = None, M_
             * ``"f"`` (full)
             Defaults to ``"l"``
     '''
+
+    quakedots = None
     
     if location == 'US':
         llon=-125
@@ -715,8 +717,30 @@ def plot_mt(mapobj,axisobj,figobj,earthquakes, mt, event_id, location = None, M_
     #mapobj.drawcountries()
     #mapobj.drawparallels(np.arange(par_range[0], par_range[1], par_range[2]), labels=[1,0,0,0], linewidth=0)
     #mapobj.drawmeridians(np.arange(mer_range[0],mer_range[1], mer_range[2]), labels=[0,0,0,1], linewidth=0)
+
+     # Plot the earthquake epicenters as points
+
+    x, y = mapobj(lons, lats)
+    min_size = 1
+    max_size = 8
+    min_mag = min(mags)
+    max_mag = max(mags)
     
+    if show_eq:
+        if len(lats) > 1:
+            frac = [(_i - min_mag) / (max_mag - min_mag) for _i in mags]
+            magnitude_size = [(_i * (max_size - min_size)) ** 2 for _i in frac]
+            magnitude_size = [(_i * min_size/2)**2 for _i in mags]
+        else:
+            magnitude_size = 15.0 ** 2
+            colors_plot = "red"
         
+        quakedots = mapobj.scatter(x, y, marker='o', s=magnitude_size, c=colors_plot,
+                zorder=10)
+    
+    print 'Max magnitude ' + str(np.max(mags)), 'Min magnitude ' + str(np.min(mags))
+    
+    #plot the moment tensor beachballs if available
     x, y = mapobj(lons_m, lats_m)
 
     mtlineobjs = []
@@ -756,14 +780,16 @@ def plot_mt(mapobj,axisobj,figobj,earthquakes, mt, event_id, location = None, M_
 
         try:
             
-            b = Beach(focmecs[i], xy=(x[i], y[i]),width=width, linewidth=1, facecolor= color, alpha=1)
+            b = Beach(focmecs[i], xy=(x[i], y[i]),width=width, linewidth=1, facecolor=color, alpha=1)
             count += 1
             #line = axisobj.plot(x[i],y[i], 'o', picker=5, markersize=30, alpha =0)
             #mtlineobjs.append(line) 
     
         except:
             pass
-        b.set_zorder(3)
+
+        #ensure that the MTs are always plotted on top of the earthquakes associated with them 
+        b.set_zorder(100)
         axisobj.add_collection(b)
         mtobjs.append(b)
         mtlineobjs.append(lineobj)
@@ -804,26 +830,10 @@ def plot_mt(mapobj,axisobj,figobj,earthquakes, mt, event_id, location = None, M_
     
     #if location == 'World':
     #    axisobj.legend(han,dles,labels(M4,M5,M6,M7), ("M 4.0", "M 5.0", "M 6.0", "M 7.0"), numpoints=1, loc=legend_loc)
-        
-    x, y = mapobj(lons, lats)
-    min_size = 1
-    max_size = 8
-    min_mag = min(mags)
-    max_mag = max(mags)
-    
-    if show_eq:
-        if len(lats) > 1:
-            frac = [(_i - min_mag) / (max_mag - min_mag) for _i in mags]
-            magnitude_size = [(_i * (max_size - min_size)) ** 2 for _i in frac]
-            magnitude_size = [(_i * min_size/2)**2 for _i in mags]
-        else:
-            magnitude_size = 15.0 ** 2
-            colors_plot = "red"
-        
-        quakedots = mapobj.scatter(x, y, marker='o', s=magnitude_size, c=colors_plot,
-                zorder=10)
-    
-    print 'Max magnitude ' + str(np.max(mags)), 'Min magnitude ' + str(np.min(mags))
+
+
+    if not quakedots:
+        quakedots = False
 
 
     return mtlineobjs,mtobjs,quakedots,xs,ys,url
@@ -898,13 +908,20 @@ def determinemtsize(minlon,maxlon,minlat,maxlat):
         print mt_width
         mt_width = 0.01
 
-    min_dot = round(((maxlat-minlat)/200.0),1)
-    max_dot = round(((maxlat-minlat)/150.0),1)
+    if (minlon == -189 and maxlon == 189):
 
-    min_quake = round(((maxlat-minlat)/15.0),2)
-    max_quake = round(((maxlat-minlat)/5.0),2)
+        #size approproate for global extent
 
-    return mt_width,mt_rad,min_dot,max_dot,min_quake,max_quake
+        min_quake = round(((maxlat-minlat)/40.0),2)
+        max_quake = round(((maxlat-minlat)/20.0),2)
+
+    else:
+
+        min_quake = round(((maxlat-minlat)/20.0),2)
+        max_quake = round(((maxlat-minlat)/10.0),2)
+
+
+    return mt_width,mt_rad,min_quake,max_quake
 
 
 
