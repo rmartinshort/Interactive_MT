@@ -658,7 +658,7 @@ def plot_mt(mapobj,axisobj,figobj,earthquakes, mt, event_id, location = None, M_
         index = np.array(mags) >= M_above
         mt_select = np.array(mt)[index]
         evid = np.array(event_id)[index]
-        times_select = np.array(times)[index]
+        #times_select = np.array(times)[index]
     else:
         evid = [row for row in event_id]
         times_select = times
@@ -679,11 +679,11 @@ def plot_mt(mapobj,axisobj,figobj,earthquakes, mt, event_id, location = None, M_
     
     colors=[]
     
-    min_color = min(times_select)
-    max_color = max(times_select)
+    min_color = 1 #min(times_select) 1
+    max_color = 10 #max(times_select) 10
     colormap = plt.get_cmap()
     
-    for i in times_select:
+    for i in range(min_color,max_color):
         colors.append(i)
     
     scal_map = ScalarMappable(norm=cc.Normalize(min_color, max_color),cmap=colormap)
